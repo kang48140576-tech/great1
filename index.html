@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고래잇 x 이마트 보물찾기</title>
+    
+    <!-- 폰트: 게임 같은 경쾌한 느낌의 Jua 폰트와 본문용 Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emart: {
+                            yellow: '#FFB81C',
+                            navy: '#112A46',
+                        },
+                        meat: '#EF4444',     // 육류 레드
+                        veggie: '#22C55E',   // 채소 그린
+                        seafood: '#3B82F6',  // 수산물 블루
+                    },
+                    fontFamily: {
+                        'game': ['Jua', 'sans-serif'],
+                        'sans': ['Noto Sans KR', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            overflow-x: hidden;
+        }
+        .bg-pattern {
+            background-image: radial-gradient(#FFB81C 2px, transparent 2px);
+            background-size: 30px 30px;
+            background-color: #112A46;
+        }
+        .text-stroke {
+            text-shadow: -2px -2px 0 #112A46, 2px -2px 0 #112A46, -2px 2px 0 #112A46, 2px 2px 0 #112A46, 4px 4px 0 rgba(0,0,0,0.3);
+        }
+        .toast {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* 커스텀 스크롤바 (모달용) */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-800">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed top-5 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-message">알림 메시지</span>
+    </div>
+
+    <!-- Header -->
+    <header class="w-full bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <!-- Home Button -->
+                <a href="../index.html" class="text-gray-400 hover:text-emart-navy transition-colors">
+                    <i class="fa-solid fa-house"></i>
+                </a>
+                
+                <!-- Logo -->
+                <div class="font-game text-2xl tracking-wide flex items-center gap-2">
+                    <span class="text-blue-500">고래잇</span>
+                    <i class="fa-solid fa-xmark text-gray-300 text-sm"></i>
+                    <span class="text-emart-yellow" style="text-shadow: 1px 1px 0 #112A46;">emart</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 relative">
+                <!-- 다국어 지원 메뉴 버튼 -->
+                <button onclick="toggleLangMenu()" class="text-gray-600 hover:text-emart-navy transition flex items-center gap-1.5 bg-gray-100 py-1.5 px-3 rounded-full text-sm font-bold">
+                    <i class="fa-solid fa-globe"></i>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                
+                <!-- 언어 선택 드롭다운 -->
+                <div id="lang-menu" class="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden w-36 hidden z-50">
+                    <ul class="text-sm font-bold text-gray-700">
+                        <li onclick="changeLang('ko', '한국어')" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-50">
+                            <span class="text-lg leading-none">🇰🇷</span> 한국어
+                        </li>
+                        <li onclick="changeLang('en', 'English')" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-50">
+                            <span class="text-lg leading-none">🇺🇸</span> English
+                        </li>
+                        <li onclick="changeLang('zh', '中文')" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-50">
+                            <span class="text-lg leading-none">🇨🇳</span> 中文
+                        </li>
+                        <li onclick="changeLang('vi', 'Tiếng Việt')" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center gap-2 border-b border-gray-50">
+                            <span class="text-lg leading-none">🇻🇳</span> Tiếng Việt
+                        </li>
+                        <li onclick="changeLang('th', 'ไทย')" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                            <span class="text-lg leading-none">🇹🇭</span> ไทย
+                        </li>
+                    </ul>
+                </div>
+
+                <button onclick="openStoreLocator()" class="bg-emart-navy text-white text-sm font-bold py-1.5 px-4 rounded-full hover:bg-opacity-90 transition whitespace-nowrap shadow-md">
+                    <i class="fa-solid fa-location-dot mr-1"></i> <span data-i18n="store_btn">매장 찾기</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Store Locator Modal (매장 찾기 모달) -->
+    <div id="store-locator-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex flex-col justify-end md:justify-center items-center pb-0 md:pb-10">
+        <div class="bg-white w-full md:w-[400px] max-h-[80vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col transform translate-y-full md:translate-y-10 transition-transform duration-300" id="store-locator-content">
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-3xl md:rounded-t-3xl">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-emart-yellow rounded-full flex items-center justify-center text-emart-navy text-sm shadow-sm">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div>
+                        <h3 data-i18n="find_store_title" class="font-game text-xl text-emart-navy leading-none">가까운 이마트 찾기</h3>
+                        <p data-i18n="current_loc" class="text-[10px] text-gray-500 font-bold mt-1">현재 위치: 부산광역시 📍</p>
+                    </div>
+                </div>
+                <button onclick="closeStoreLocator()" class="w-8 h-8 flex items-center justify-center bg-white rounded-full text-gray-400 hover:text-gray-700 shadow-sm border border-gray-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-3 custom-scrollbar" id="store-list">
+                <!-- Store Item 1 -->
+                <div class="bg-white border-2 border-emart-yellow/30 p-4 rounded-2xl shadow-sm hover:border-emart-yellow transition-colors relative overflow-hidden group">
+                    <div data-i18n="nearest" class="absolute top-0 right-0 bg-emart-yellow text-emart-navy text-[10px] font-black px-2 py-1 rounded-bl-lg z-10">가장 가까움</div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">이마트 금정점</h4>
+                            <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-map-location-dot mr-1"></i>부산 금정구 중앙대로1841번길 24</p>
+                        </div>
+                        <span class="bg-blue-50 text-blue-600 font-bold text-xs px-2 py-1 rounded-full">1.4km</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs mb-3">
+                        <span data-i18n="open_now" class="text-green-500 font-bold"><i class="fa-solid fa-clock mr-1"></i>영업중</span>
+                        <span class="text-gray-400">|</span>
+                        <span data-i18n="time1" class="text-gray-600">오전 10:00 ~ 오후 11:00</span>
+                    </div>
+                    <a href="https://maps.google.com/?cid=12702644433972455474" target="_blank" data-i18n="view_map" class="block w-full bg-gray-50 hover:bg-gray-100 text-gray-700 text-center text-sm font-bold py-2 rounded-xl border border-gray-200 transition">
+                        지도에서 보기 <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>
+                    </a>
+                </div>
+
+                <!-- Store Item 2 -->
+                <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:border-emart-navy/30 transition-colors">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">이마트 연제점</h4>
+                            <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-map-location-dot mr-1"></i>부산 연제구 연수로 89</p>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 font-bold text-xs px-2 py-1 rounded-full">8.2km</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs mb-3">
+                        <span data-i18n="open_now" class="text-green-500 font-bold"><i class="fa-solid fa-clock mr-1"></i>영업중</span>
+                        <span class="text-gray-400">|</span>
+                        <span data-i18n="time1" class="text-gray-600">오전 10:00 ~ 오후 11:00</span>
+                    </div>
+                    <a href="https://map.naver.com/" target="_blank" data-i18n="view_map" class="block w-full bg-gray-50 hover:bg-gray-100 text-gray-700 text-center text-sm font-bold py-2 rounded-xl border border-gray-200 transition">
+                        지도에서 보기 <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="bg-pattern relative w-full pt-10 pb-16 overflow-hidden">
+        <div class="max-w-md mx-auto px-4 relative z-10 flex flex-col items-center text-center">
+            
+            <div class="w-full bg-black/40 backdrop-blur-sm rounded-xl p-3 mb-6 border border-emart-yellow/30 flex justify-between items-center text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-emart-yellow rounded-full border-2 border-white flex items-center justify-center text-2xl">🐳</div>
+                    <div class="text-left flex flex-col gap-1">
+                        <span data-i18n="lv_title" class="font-game text-sm text-emart-yellow">Lv.12 주부탐험가</span>
+                        <div class="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div class="bg-red-500 w-full h-full"></div>
+                        </div>
+                        <div class="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div class="bg-blue-400 w-4/5 h-full"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div data-i18n="quest_ing" class="text-xs text-gray-300 mb-1">진행중인 퀘스트</div>
+                    <div data-i18n="quest_item" class="font-bold text-sm text-green-400">보물 재료 (0/4)</div>
+                </div>
+            </div>
+
+            <div data-i18n="quest_accept" class="inline-block bg-emart-yellow text-emart-navy font-game px-4 py-1 rounded-full text-sm mb-3 animate-bounce-slow shadow-md">
+                ✨ 퀘스트 수락! ✨
+            </div>
+            
+            <h1 data-i18n="hero_title" class="font-game text-4xl md:text-5xl text-emart-yellow text-stroke mb-4 leading-tight">
+                이마트에서 시작하는<br>
+                <span class="text-white text-5xl md:text-6xl text-stroke block mt-2">보물찾기 🗺️</span>
+            </h1>
+            
+            <p data-i18n="hero_sub" class="text-white font-bold text-lg mb-8 drop-shadow-md">
+                지도를 받고, 색깔 찾고, 스탬프 찍고!<br>
+                아이와 함께 찾고, 오늘 저녁 레시피까지 GET!
+            </p>
+
+            <button onclick="document.getElementById('how-to').scrollIntoView({behavior: 'smooth'})" class="w-full max-w-xs bg-emart-yellow text-emart-navy font-game text-xl py-4 rounded-2xl shadow-[0_8px_0_#d9980b] active:shadow-[0_0px_0_#d9980b] active:translate-y-2 transition-all flex items-center justify-center gap-2">
+                <span data-i18n="start_btn"><i class="fa-solid fa-play"></i> 지금 시작하기</span>
+            </button>
+        </div>
+        <div class="absolute top-10 left-[-20px] text-4xl opacity-50 animate-float text-emart-yellow"><i class="fa-solid fa-star"></i></div>
+        <div class="absolute bottom-20 right-[-10px] text-5xl opacity-50 animate-float text-white" style="animation-delay: 1s;"><i class="fa-solid fa-compass"></i></div>
+    </section>
+
+    <!-- How to Play Section -->
+    <section id="how-to" class="max-w-md mx-auto px-4 py-12">
+        <div class="text-center mb-8">
+            <h2 data-i18n="how_to_title" class="font-game text-3xl text-emart-navy mb-2">어떻게 참여하나요?</h2>
+            <p data-i18n="how_to_sub" class="text-gray-600">입구에서 단 3초면 이해 끝! 아주 쉬워요.</p>
+        </div>
+
+        <div class="flex flex-col gap-4 relative">
+            <div class="absolute left-8 top-10 bottom-10 w-1 bg-gray-200 z-0"></div>
+
+            <div class="relative z-10 flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="w-10 h-10 shrink-0 bg-emart-navy text-white rounded-full flex items-center justify-center font-game text-xl shadow-md">1</div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg text-emart-navy mb-1"><i class="fa-regular fa-map text-emart-yellow mr-1"></i> <span data-i18n="step1">보물지도 받기</span></h3>
+                    <p data-i18n="step1_desc" class="text-sm text-gray-600">매장 입구나 고객센터에서 보물지도를 챙기세요!</p>
+                </div>
+            </div>
+
+            <div class="relative z-10 flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="w-10 h-10 shrink-0 bg-emart-navy text-white rounded-full flex items-center justify-center font-game text-xl shadow-md">2</div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg text-emart-navy mb-1"><i class="fa-solid fa-magnifying-glass text-emart-yellow mr-1"></i> <span data-i18n="step2">색깔 찾기</span></h3>
+                    <p data-i18n="step2_desc" class="text-sm text-gray-600">언어를 몰라도 괜찮아요! 지도 속 색깔과 같은 코너를 찾아요.</p>
+                    <div class="flex gap-2 mt-2">
+                        <span data-i18n="tag_meat" class="bg-meat text-white text-xs px-2 py-1 rounded font-bold">육류 🥩</span>
+                        <span data-i18n="tag_veg" class="bg-veggie text-white text-xs px-2 py-1 rounded font-bold">채소 🥬</span>
+                        <span data-i18n="tag_sea" class="bg-seafood text-white text-xs px-2 py-1 rounded font-bold">수산물 🐟</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative z-10 flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="w-10 h-10 shrink-0 bg-emart-navy text-white rounded-full flex items-center justify-center font-game text-xl shadow-md">3</div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg text-emart-navy mb-1"><i class="fa-solid fa-cart-shopping text-emart-yellow mr-1"></i> <span data-i18n="step3">보물 식재료 쏙!</span></h3>
+                    <p data-i18n="step3_desc" class="text-sm text-gray-600">퀘스트에 맞는 식재료와 이마트 PB상품을 장바구니에 담아요.</p>
+                </div>
+            </div>
+
+            <div class="relative z-10 flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 border-2 border-emart-yellow">
+                <div class="w-10 h-10 shrink-0 bg-emart-yellow text-emart-navy rounded-full flex items-center justify-center font-game text-xl shadow-md">4</div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg text-emart-navy mb-1"><i class="fa-solid fa-stamp text-red-500 mr-1"></i> <span data-i18n="step4">스탬프 찍기</span></h3>
+                    <p data-i18n="step4_desc" class="text-sm text-gray-600">미션 완료 후 스탬프를 찍고 특별한 리워드를 받아가세요!</p>
+                </div>
+                <div class="text-3xl text-emart-yellow animate-pulse-fast"><i class="fa-solid fa-gift"></i></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Virtual Experience Mini-Game -->
+    <section id="virtual-experience" class="max-w-md mx-auto px-4 py-8 mb-4">
+        <div class="bg-white rounded-3xl p-5 shadow-[0_10px_30px_rgba(17,42,70,0.1)] border-t-4 border-emart-yellow relative overflow-hidden">
+            <div class="text-center mb-6">
+                <span data-i18n="game_badge" class="inline-block bg-emart-navy text-white font-bold px-3 py-1 rounded-full text-[10px] mb-2 tracking-wider">가상 체험 미니게임</span>
+                <h2 data-i18n="game_title" class="font-game text-2xl text-emart-navy mb-1">내 손안의 보물찾기 🎮</h2>
+                <p data-i18n="game_sub" class="text-xs text-gray-500">방향키를 움직여 오늘의 퀘스트 재료를 찾아보세요!</p>
+            </div>
+
+            <div class="flex justify-center gap-3 max-w-[340px] mx-auto mt-6 mb-2 relative">
+                <div data-i18n="game_tooltip" class="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-emart-navy text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md z-10 animate-bounce">
+                    이동해서 보물을 획득하세요! 👇
+                </div>
+
+                <!-- Quest List -->
+                <div class="w-28 shrink-0 bg-[#FFF9E6] border-2 border-emart-yellow rounded-xl overflow-hidden flex flex-col shadow-sm">
+                    <div data-i18n="quest_title" class="bg-emart-yellow text-emart-navy text-[11px] font-black py-1.5 text-center tracking-wide">
+                        📜 불고기 퀘스트
+                    </div>
+                    <div class="p-2 flex flex-col justify-around flex-1 gap-1">
+                        <div id="list-meat" class="flex flex-col gap-0.5 transition-all duration-300 opacity-60">
+                            <div class="flex items-center gap-1">
+                                <i id="check-meat" class="fa-regular fa-square text-gray-400 text-xs"></i>
+                                <span data-i18n="q_meat_loc" class="text-[10px] font-bold text-gray-500">정육 코너</span>
+                            </div>
+                            <span data-i18n="q_meat_item" class="text-xs font-black pl-4 text-emart-navy">🥩 소고기</span>
+                        </div>
+                        <div id="list-veggie" class="flex flex-col gap-0.5 transition-all duration-300 opacity-60">
+                            <div class="flex items-center gap-1">
+                                <i id="check-veggie" class="fa-regular fa-square text-gray-400 text-xs"></i>
+                                <span data-i18n="q_veg_loc" class="text-[10px] font-bold text-gray-500">채소 코너</span>
+                            </div>
+                            <span data-i18n="q_veg_item" class="text-xs font-black pl-4 text-emart-navy">🥬 양파</span>
+                        </div>
+                        <div id="list-seafood" class="flex flex-col gap-0.5 transition-all duration-300 opacity-60">
+                            <div class="flex items-center gap-1">
+                                <i id="check-seafood" class="fa-regular fa-square text-gray-400 text-xs"></i>
+                                <span data-i18n="q_sea_loc" class="text-[10px] font-bold text-gray-500">수산 코너</span>
+                            </div>
+                            <span data-i18n="q_sea_item" class="text-xs font-black pl-4 text-emart-navy">🐟 오징어</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Board -->
+                <div id="game-board" class="flex-1 max-w-[200px] shrink-0 aspect-square bg-gray-50 border-4 border-emart-navy rounded-xl relative overflow-hidden shadow-inner grid grid-cols-5 grid-rows-5">
+                    <div id="player" class="absolute w-1/5 h-1/5 flex items-center justify-center text-2xl z-20 transition-transform duration-200 ease-out drop-shadow-md" style="transform: translate(200%, 400%);">🐳</div>
+                    
+                    <div id="game-success" class="absolute inset-0 bg-emart-navy/95 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-30">
+                        <div class="text-5xl text-red-500 mb-1 drop-shadow-2xl scale-0 transition-transform duration-500 delay-300 origin-center" id="stamp-icon"><i class="fa-solid fa-stamp"></i></div>
+                        <div data-i18n="game_success_title" class="font-game text-xl text-emart-yellow text-stroke mb-2">퀘스트 완료!</div>
+                        
+                        <div id="coupon-box" class="bg-white rounded-lg p-2 flex flex-col items-center shadow-[0_4px_15px_rgba(255,184,28,0.3)] border-2 border-emart-yellow scale-0 transition-transform duration-500 origin-center w-3/4 max-w-[120px]">
+                            <span data-i18n="coupon_badge" class="bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full mb-1">미션 성공 보상</span>
+                            <i class="fa-solid fa-qrcode text-4xl text-emart-navy my-1"></i>
+                            <div data-i18n="coupon_desc" class="font-game text-sm text-emart-navy mt-1 tracking-wider">10% 할인</div>
+                            <div data-i18n="coupon_sub" class="text-[8px] text-gray-500 mt-0.5 font-bold">화면을 캡처하세요!</div>
+                        </div>
+
+                        <button onclick="resetGame()" class="mt-3 bg-white/20 text-white px-3 py-1 rounded-full text-[10px] font-bold hover:bg-white/30 active:scale-95 transition flex items-center gap-1 border border-white/30">
+                            <span data-i18n="btn_retry"><i class="fa-solid fa-rotate-right"></i> 다시 하기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D-Pad Controls -->
+            <div class="mt-4 grid grid-cols-3 gap-2 w-48 mx-auto pb-2">
+                <div></div>
+                <button onclick="movePlayer(0, -1)" class="bg-white border-2 border-gray-200 hover:bg-gray-50 active:bg-gray-200 rounded-xl h-12 flex items-center justify-center shadow-[0_4px_0_#e5e7eb] active:shadow-[0_0px_0_#e5e7eb] active:translate-y-1 transition-all touch-manipulation">
+                    <i class="fa-solid fa-arrow-up text-emart-navy text-xl"></i>
+                </button>
+                <div></div>
+                <button onclick="movePlayer(-1, 0)" class="bg-white border-2 border-gray-200 hover:bg-gray-50 active:bg-gray-200 rounded-xl h-12 flex items-center justify-center shadow-[0_4px_0_#e5e7eb] active:shadow-[0_0px_0_#e5e7eb] active:translate-y-1 transition-all touch-manipulation">
+                    <i class="fa-solid fa-arrow-left text-emart-navy text-xl"></i>
+                </button>
+                <button onclick="movePlayer(0, 1)" class="bg-white border-2 border-gray-200 hover:bg-gray-50 active:bg-gray-200 rounded-xl h-12 flex items-center justify-center shadow-[0_4px_0_#e5e7eb] active:shadow-[0_0px_0_#e5e7eb] active:translate-y-1 transition-all touch-manipulation">
+                    <i class="fa-solid fa-arrow-down text-emart-navy text-xl"></i>
+                </button>
+                <button onclick="movePlayer(1, 0)" class="bg-white border-2 border-gray-200 hover:bg-gray-50 active:bg-gray-200 rounded-xl h-12 flex items-center justify-center shadow-[0_4px_0_#e5e7eb] active:shadow-[0_0px_0_#e5e7eb] active:translate-y-1 transition-all touch-manipulation">
+                    <i class="fa-solid fa-arrow-right text-emart-navy text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rewards Section -->
+    <section id="rewards" class="max-w-md mx-auto px-4 py-8 mb-4">
+        <div class="text-center mb-8">
+            <span data-i18n="reward_badge" class="inline-block bg-emart-yellow text-emart-navy font-bold px-3 py-1 rounded-full text-[10px] mb-2 tracking-wider">미션 성공 혜택</span>
+            <h2 data-i18n="reward_title" class="font-game text-3xl text-emart-navy">고래잇 보물찾기 리워드!</h2>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-md text-center transform hover:scale-105 transition">
+                <div class="text-4xl mb-2">🔑</div>
+                <h4 data-i18n="reward1_title" class="font-bold text-emart-navy text-sm">고래잇 키링</h4>
+                <p data-i18n="reward1_desc" class="text-xs text-gray-500 mt-1">가방에 달면 인싸템!</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-md text-center transform hover:scale-105 transition">
+                <div class="text-4xl mb-2">🎁</div>
+                <h4 data-i18n="reward2_title" class="font-bold text-emart-navy text-sm">한정판 스티커</h4>
+                <p data-i18n="reward2_desc" class="text-xs text-gray-500 mt-1">나만의 보물지도 꾸미기</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-md text-center col-span-2 transform hover:scale-105 transition flex items-center gap-4">
+                <div class="text-4xl">🎫</div>
+                <div class="text-left">
+                    <h4 data-i18n="reward3_title" class="font-bold text-emart-navy">이마트 특별 할인 쿠폰</h4>
+                    <p data-i18n="reward3_desc" class="text-xs text-gray-500 mt-1">엄마아빠를 위한 보너스 보상!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Teaser Section -->
+    <section class="max-w-md mx-auto px-4 py-16 text-center">
+        <h2 data-i18n="teaser_title" class="font-game text-2xl text-emart-navy mb-6">다음 주 보물 메뉴는 과연 무엇일까요?</h2>
+        
+        <div class="bg-blue-50 rounded-3xl p-8 relative overflow-hidden mb-8 border border-blue-100 shadow-inner">
+            <h3 data-i18n="teaser_soon" class="font-game text-4xl text-blue-500 mb-4 animate-pulse">커밍순</h3>
+            <div class="relative w-40 h-40 mx-auto" onclick="revealTeaser()">
+                <div id="teaser-shadow" class="absolute inset-0 bg-emart-navy rounded-full blur-md opacity-20 mt-4"></div>
+                <div id="teaser-img" class="absolute inset-0 flex items-center justify-center text-8xl text-emart-navy filter drop-shadow-xl cursor-pointer transition-all duration-500 hover:scale-110">
+                    <i class="fa-solid fa-question bg-white rounded-full w-24 h-24 flex items-center justify-center shadow-lg"></i>
+                </div>
+                <div id="teaser-result" class="absolute inset-0 flex flex-col items-center justify-center opacity-0 scale-50 transition-all duration-500 hidden">
+                    <span class="text-6xl">🍲</span>
+                    <span data-i18n="teaser_result" class="font-bold text-emart-navy mt-2">따끈따끈 전골!</span>
+                </div>
+            </div>
+            <p data-i18n="teaser_hint" class="text-sm text-gray-500 mt-6 mt-4 cursor-pointer" onclick="revealTeaser()">클릭해서 실루엣 힌트 확인하기!</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 mb-8 shadow-sm border border-gray-200 text-left relative overflow-hidden">
+            <div class="absolute -right-4 -top-4 text-6xl text-emart-yellow opacity-10 pointer-events-none"><i class="fa-solid fa-bell"></i></div>
+            <div class="flex items-center gap-3 mb-3 relative z-10">
+                <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-bell fa-shake" style="--fa-animation-duration: 3s;"></i>
+                </div>
+                <div>
+                    <h4 data-i18n="noti_title" class="font-game text-lg text-emart-navy leading-none mb-1">다음 주 퀘스트 알림 받기!</h4>
+                    <p data-i18n="noti_desc" class="text-[10px] text-gray-500 font-bold leading-tight">새로운 보물지도 오픈 소식을 가장 먼저 알려드려요.</p>
+                </div>
+            </div>
+            <div class="flex gap-2 relative z-10">
+                <input type="tel" id="phone-input" data-i18n-placeholder="placeholder_phone" placeholder="휴대폰 번호 (-제외)" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emart-yellow focus:ring-2 focus:ring-emart-yellow/50 transition-all">
+                <button onclick="subscribeNotification()" data-i18n="btn_submit" class="bg-emart-navy text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-opacity-90 active:scale-95 transition shadow-sm whitespace-nowrap">
+                    신청하기
+                </button>
+            </div>
+        </div>
+
+        <p data-i18n="outro_title" class="font-bold text-lg mb-2">보물찾기는 계속됩니다!</p>
+        <p data-i18n="outro_desc" class="text-gray-600 text-sm mb-8">매주 새로운 미션과 레시피로 장보는 시간이 즐거워져요.</p>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="handleInstaClick()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2">
+                <span data-i18n="btn_insta"><i class="fa-brands fa-instagram text-xl"></i> 인스타그램 미션 인증하기</span>
+            </button>
+            <button onclick="copyHashtags()" class="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                <span data-i18n="btn_copy"><i class="fa-regular fa-copy"></i> 해시태그 복사하기</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-emart-navy text-gray-400 py-8 text-center text-xs w-full">
+        <div class="max-w-md mx-auto px-4">
+            <div class="font-game text-xl text-white mb-4">고래잇 x emart</div>
+            <p data-i18n="footer_p1" class="mb-2">본 프로모션은 이마트 전국 100개 지정 점포에서 진행됩니다.</p>
+            <p data-i18n="footer_p2" class="mb-4">경품 조기 소진 시 이벤트가 일찍 종료될 수 있습니다.</p>
+            <div class="flex justify-center gap-4 text-gray-500 mb-6">
+                <a href="#" data-i18n="footer_terms" class="hover:text-white">이용약관</a>
+                <span>|</span>
+                <a href="#" data-i18n="footer_privacy" class="hover:text-white">개인정보처리방침</a>
+            </div>
+            
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 text-left">
+                <p data-i18n="footer_cs_title" class="text-white font-bold mb-2 text-sm"><i class="fa-solid fa-headset mr-2"></i>고객센터 안내</p>
+                <div class="flex flex-col gap-1 text-gray-400">
+                    <p data-i18n="footer_cs1">이마트 통합 고객센터 : 02-380-5678</p>
+                    <p data-i18n="footer_cs2">이마트몰 고객센터 : 1588-1234</p>
+                    <p data-i18n="footer_cs3">문의 메일 : cs@goraeit.com</p>
+                    <p data-i18n="footer_cs4" class="text-[10px] mt-1 text-gray-500">운영시간 : 09:00 ~ 17:00 (주말/공휴일 제외)</p>
+                </div>
+            </div>
+
+            <p>© 2026 emart & Goraeit. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 전역 언어 설정 변수
+        let currentLang = 'ko';
+
+        // 통합 다국어 사전 (UI의 모든 텍스트)
+        const translations = {
+            'ko': {
+                'store_btn': '매장 찾기',
+                'find_store_title': '가까운 이마트 찾기',
+                'current_loc': '현재 위치: 부산광역시 📍',
+                'nearest': '가장 가까움', 'open_now': '영업중', 'time1': '오전 10:00 ~ 오후 11:00',
+                'view_map': '지도에서 보기 <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>',
+                'lv_title': 'Lv.12 주부탐험가',
+                'quest_ing': '진행중인 퀘스트', 'quest_item': '보물 재료 (0/4)',
+                'quest_accept': '✨ 퀘스트 수락! ✨',
+                'hero_title': '이마트에서 시작하는<br><span class="text-white text-5xl md:text-6xl text-stroke block mt-2">보물찾기 🗺️</span>',
+                'hero_sub': '지도를 받고, 색깔 찾고, 스탬프 찍고!<br>아이와 함께 찾고, 오늘 저녁 레시피까지 GET!',
+                'start_btn': '<i class="fa-solid fa-play"></i> 지금 시작하기',
+                'how_to_title': '어떻게 참여하나요?', 'how_to_sub': '입구에서 단 3초면 이해 끝! 아주 쉬워요.',
+                'step1': '보물지도 받기', 'step1_desc': '매장 입구나 고객센터에서 보물지도를 챙기세요!',
+                'step2': '색깔 찾기', 'step2_desc': '언어를 몰라도 괜찮아요! 지도 속 색깔과 같은 코너를 찾아요.',
+                'tag_meat': '육류 🥩', 'tag_veg': '채소 🥬', 'tag_sea': '수산물 🐟',
+                'step3': '보물 식재료 쏙!', 'step3_desc': '퀘스트에 맞는 식재료와 이마트 PB상품을 장바구니에 담아요.',
+                'step4': '스탬프 찍기', 'step4_desc': '미션 완료 후 스탬프를 찍고 특별한 리워드를 받아가세요!',
+                'game_badge': '가상 체험 미니게임', 'game_title': '내 손안의 보물찾기 🎮',
+                'game_sub': '방향키를 움직여 오늘의 퀘스트 재료를 찾아보세요!',
+                'game_tooltip': '이동해서 보물을 획득하세요! 👇', 'quest_title': '📜 불고기 퀘스트',
+                'q_meat_loc': '정육 코너', 'q_meat_item': '🥩 소고기',
+                'q_veg_loc': '채소 코너', 'q_veg_item': '🥬 양파',
+                'q_sea_loc': '수산 코너', 'q_sea_item': '🐟 오징어',
+                'game_success_title': '퀘스트 완료!', 'coupon_badge': '미션 성공 보상',
+                'coupon_desc': '10% 할인', 'coupon_sub': '화면을 캡처하세요!',
+                'btn_retry': '<i class="fa-solid fa-rotate-right"></i> 다시 하기',
+                'reward_badge': '미션 성공 혜택', 'reward_title': '고래잇 보물찾기 리워드!',
+                'reward1_title': '고래잇 키링', 'reward1_desc': '가방에 달면 인싸템!',
+                'reward2_title': '한정판 스티커', 'reward2_desc': '나만의 보물지도 꾸미기',
+                'reward3_title': '이마트 특별 할인 쿠폰', 'reward3_desc': '엄마아빠를 위한 보너스 보상!',
+                'teaser_title': '다음 주 보물 메뉴는 과연 무엇일까요?',
+                'teaser_soon': '커밍순', 'teaser_hint': '클릭해서 실루엣 힌트 확인하기!', 'teaser_result': '따끈따끈 전골!',
+                'noti_title': '다음 주 퀘스트 알림 받기!', 'noti_desc': '새로운 보물지도 오픈 소식을 가장 먼저 알려드려요.',
+                'placeholder_phone': '휴대폰 번호 (-제외)', 'btn_submit': '신청하기',
+                'outro_title': '보물찾기는 계속됩니다!', 'outro_desc': '매주 새로운 미션과 레시피로 장보는 시간이 즐거워져요.',
+                'btn_insta': '<i class="fa-brands fa-instagram text-xl"></i> 인스타그램 미션 인증하기',
+                'btn_copy': '<i class="fa-regular fa-copy"></i> 해시태그 복사하기',
+                'footer_p1': '본 프로모션은 이마트 전국 100개 지정 점포에서 진행됩니다.',
+                'footer_p2': '경품 조기 소진 시 이벤트가 일찍 종료될 수 있습니다.',
+                'footer_terms': '이용약관', 'footer_privacy': '개인정보처리방침',
+                'footer_cs_title': '<i class="fa-solid fa-headset mr-2"></i>고객센터 안내',
+                'footer_cs1': '이마트 통합 고객센터 : 02-380-5678', 'footer_cs2': '이마트몰 고객센터 : 1588-1234',
+                'footer_cs3': '문의 메일 : cs@goraeit.com', 'footer_cs4': '운영시간 : 09:00 ~ 17:00 (주말/공휴일 제외)',
+                
+                // 스크립트 내부 동적 메시지
+                'msg_lang': '언어가 변경되었습니다.',
+                'msg_get_meat': '소고기 획득 완료! 🛒', 'msg_get_veggie': '양파 획득 완료! 🛒', 'msg_get_seafood': '오징어 획득 완료! 🛒',
+                'msg_hint': '앗! 다음 주 힌트를 발견했어요!',
+                'msg_copy_ok': '해시태그가 복사되었습니다!', 'msg_copy_fail': '복사에 실패했습니다. 직접 입력해주세요.',
+                'msg_noti_err': '휴대폰 번호를 입력해주세요! 📱', 'msg_noti_ok': '알림 신청이 완료되었습니다! 🔔'
+            },
+            'en': {
+                'store_btn': 'Find Store',
+                'find_store_title': 'Find Emart Near You',
+                'current_loc': 'Location: Busan 📍',
+                'nearest': 'Nearest', 'open_now': 'Open', 'time1': '10:00 AM ~ 11:00 PM',
+                'view_map': 'View Map <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>',
+                'lv_title': 'Lv.12 Explorer Mom',
+                'quest_ing': 'Active Quest', 'quest_item': 'Treasure (0/4)',
+                'quest_accept': '✨ Quest Accepted! ✨',
+                'hero_title': 'Emart Treasure Hunt<br><span class="text-white text-5xl md:text-6xl text-stroke block mt-2">Starts Now! 🗺️</span>',
+                'hero_sub': 'Get a map, match colors, and collect stamps!<br>Find ingredients with kids and get tonight\'s recipe!',
+                'start_btn': '<i class="fa-solid fa-play"></i> Start Now',
+                'how_to_title': 'How to Play?', 'how_to_sub': 'Understand in 3 seconds at the entrance!',
+                'step1': 'Get a Map', 'step1_desc': 'Grab a treasure map at the entrance or customer center!',
+                'step2': 'Find Colors', 'step2_desc': 'Find the section that matches the color on your map.',
+                'tag_meat': 'Meat 🥩', 'tag_veg': 'Veggie 🥬', 'tag_sea': 'Seafood 🐟',
+                'step3': 'Grab Ingredients!', 'step3_desc': 'Put quest ingredients and Emart PB items in your cart!',
+                'step4': 'Collect Stamps', 'step4_desc': 'Stamp your map after missions to get special rewards!',
+                'game_badge': 'Virtual Mini Game', 'game_title': 'Mini Treasure Hunt 🎮',
+                'game_sub': 'Move to find today\'s quest ingredients!',
+                'game_tooltip': 'Move to collect treasure! 👇', 'quest_title': '📜 Bulgogi Quest',
+                'q_meat_loc': 'Meat Sec.', 'q_meat_item': '🥩 Beef',
+                'q_veg_loc': 'Veggie Sec.', 'q_veg_item': '🥬 Onion',
+                'q_sea_loc': 'Seafood Sec.', 'q_sea_item': '🐟 Squid',
+                'game_success_title': 'Quest Clear!', 'coupon_badge': 'Success Reward',
+                'coupon_desc': '10% OFF', 'coupon_sub': 'Capture this screen!',
+                'btn_retry': '<i class="fa-solid fa-rotate-right"></i> Retry',
+                'reward_badge': 'Success Benefits', 'reward_title': 'Treasure Rewards!',
+                'reward1_title': 'Whale Keyring', 'reward1_desc': 'Trendy bag accessory!',
+                'reward2_title': 'Limited Stickers', 'reward2_desc': 'Decorate your own map',
+                'reward3_title': 'Discount Coupon', 'reward3_desc': 'Bonus reward for parents!',
+                'teaser_title': 'What is next week\'s treasure menu?',
+                'teaser_soon': 'Coming Soon', 'teaser_hint': 'Click to see the silhouette hint!', 'teaser_result': 'Warm Hot Pot!',
+                'noti_title': 'Get Next Week\'s Alerts!', 'noti_desc': 'Be the first to know about new treasure maps.',
+                'placeholder_phone': 'Phone Number (No dashes)', 'btn_submit': 'Subscribe',
+                'outro_title': 'The Hunt Continues!', 'outro_desc': 'Grocery shopping becomes fun every week with new missions.',
+                'btn_insta': '<i class="fa-brands fa-instagram text-xl"></i> Verify on Instagram',
+                'btn_copy': '<i class="fa-regular fa-copy"></i> Copy Hashtags',
+                'footer_p1': 'This promotion runs at 100 designated Emart stores nationwide.',
+                'footer_p2': 'The event may end early if prizes run out.',
+                'footer_terms': 'Terms', 'footer_privacy': 'Privacy Policy',
+                'footer_cs_title': '<i class="fa-solid fa-headset mr-2"></i>Customer Service',
+                'footer_cs1': 'Emart CS Center : 02-380-5678', 'footer_cs2': 'Emart Mall CS : 1588-1234',
+                'footer_cs3': 'Email : cs@goraeit.com', 'footer_cs4': 'Hours : 09:00 ~ 17:00 (Exc. Weekends/Holidays)',
+                
+                'msg_lang': 'Language changed to ',
+                'msg_get_meat': 'Beef Collected! 🛒', 'msg_get_veggie': 'Onion Collected! 🛒', 'msg_get_seafood': 'Squid Collected! 🛒',
+                'msg_hint': 'You found next week\'s hint!',
+                'msg_copy_ok': 'Hashtags copied!', 'msg_copy_fail': 'Copy failed. Please type manually.',
+                'msg_noti_err': 'Please enter phone number! 📱', 'msg_noti_ok': 'Subscription successful! 🔔'
+            },
+            'zh': {
+                'store_btn': '查找门店',
+                'find_store_title': '查找附近门店',
+                'current_loc': '当前位置: 釜山 📍',
+                'nearest': '最近', 'open_now': '营业中', 'time1': '上午 10:00 ~ 下午 11:00',
+                'view_map': '在地图上查看 <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>',
+                'lv_title': 'Lv.12 妈妈探险家',
+                'quest_ing': '进行中的任务', 'quest_item': '寻宝材料 (0/4)',
+                'quest_accept': '✨ 接受任务! ✨',
+                'hero_title': '易买得寻宝游戏<br><span class="text-white text-5xl md:text-6xl text-stroke block mt-2">现在开始！🗺️</span>',
+                'hero_sub': '获取地图，寻找颜色，盖章！<br>和孩子一起寻找食材，获取今晚的食谱！',
+                'start_btn': '<i class="fa-solid fa-play"></i> 立即开始',
+                'how_to_title': '如何参与？', 'how_to_sub': '在入口处3秒钟即可了解！非常简单。',
+                'step1': '获取地图', 'step1_desc': '在门店入口或客服中心领取寻宝地图！',
+                'step2': '寻找颜色', 'step2_desc': '不懂语言也没关系！寻找与地图上颜色相同的区域。',
+                'tag_meat': '肉类 🥩', 'tag_veg': '蔬菜 🥬', 'tag_sea': '海鲜 🐟',
+                'step3': '放入购物车！', 'step3_desc': '将任务所需的食材和易买得自有品牌商品放入购物车！',
+                'step4': '盖章', 'step4_desc': '完成任务后盖章，领取特别奖励！',
+                'game_badge': '虚拟体验小游戏', 'game_title': '掌上寻宝 🎮',
+                'game_sub': '移动方向键寻找今天的任务食材！',
+                'game_tooltip': '移动以获取宝物！👇', 'quest_title': '📜 烤肉任务',
+                'q_meat_loc': '肉类区', 'q_meat_item': '🥩 牛肉',
+                'q_veg_loc': '蔬菜区', 'q_veg_item': '🥬 洋葱',
+                'q_sea_loc': '海鲜区', 'q_sea_item': '🐟 鱿鱼',
+                'game_success_title': '任务完成!', 'coupon_badge': '成功奖励',
+                'coupon_desc': '9折优惠', 'coupon_sub': '请截图保存！',
+                'btn_retry': '<i class="fa-solid fa-rotate-right"></i> 再玩一次',
+                'reward_badge': '任务成功福利', 'reward_title': '寻宝奖励！',
+                'reward1_title': '鲸鱼钥匙扣', 'reward1_desc': '挂在包上的潮品！',
+                'reward2_title': '限量版贴纸', 'reward2_desc': '装饰你自己的寻宝地图',
+                'reward3_title': '特别折扣券', 'reward3_desc': '给爸爸妈妈的额外奖励！',
+                'teaser_title': '下周的宝物菜单会是什么呢？',
+                'teaser_soon': '敬请期待', 'teaser_hint': '点击查看剪影提示！', 'teaser_result': '热腾腾的火锅！',
+                'noti_title': '接收下周任务提醒！', 'noti_desc': '第一时间通知您新寻宝地图开启的消息。',
+                'placeholder_phone': '手机号码（不含破折号）', 'btn_submit': '申请',
+                'outro_title': '寻宝仍在继续！', 'outro_desc': '每周的新任务和食谱让购物时光变得更加愉快。',
+                'btn_insta': '<i class="fa-brands fa-instagram text-xl"></i> 在Instagram上验证任务',
+                'btn_copy': '<i class="fa-regular fa-copy"></i> 复制标签',
+                'footer_p1': '本活动在全国100家指定的易买得门店举行。',
+                'footer_p2': '如果奖品发完，活动可能会提前结束。',
+                'footer_terms': '服务条款', 'footer_privacy': '隐私政策',
+                'footer_cs_title': '<i class="fa-solid fa-headset mr-2"></i>客户服务',
+                'footer_cs1': '易买得综合客服 : 02-380-5678', 'footer_cs2': '易买得商城客服 : 1588-1234',
+                'footer_cs3': '咨询邮箱 : cs@goraeit.com', 'footer_cs4': '营业时间 : 09:00 ~ 17:00 (周末/节假日除外)',
+                
+                'msg_lang': '语言已更改为 ',
+                'msg_get_meat': '牛肉获取成功! 🛒', 'msg_get_veggie': '洋葱获取成功! 🛒', 'msg_get_seafood': '鱿鱼获取成功! 🛒',
+                'msg_hint': '你发现了下周的提示！',
+                'msg_copy_ok': '标签已复制！', 'msg_copy_fail': '复制失败，请手动输入。',
+                'msg_noti_err': '请输入手机号码! 📱', 'msg_noti_ok': '申请成功! 🔔'
+            },
+            'vi': {
+                'store_btn': 'Tìm cửa hàng',
+                'find_store_title': 'Tìm Emart Gần Nhất',
+                'current_loc': 'Vị trí: Busan 📍',
+                'nearest': 'Gần nhất', 'open_now': 'Đang mở', 'time1': '10:00 Sáng ~ 11:00 Tối',
+                'view_map': 'Xem bản đồ <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>',
+                'lv_title': 'Lv.12 Mẹ Thám Hiểm',
+                'quest_ing': 'Nhiệm vụ đang làm', 'quest_item': 'Kho báu (0/4)',
+                'quest_accept': '✨ Nhận nhiệm vụ! ✨',
+                'hero_title': 'Truy tìm kho báu Emart<br><span class="text-white text-5xl md:text-6xl text-stroke block mt-2">Bắt đầu ngay! 🗺️</span>',
+                'hero_sub': 'Nhận bản đồ, tìm màu sắc và thu thập tem!<br>Cùng trẻ tìm nguyên liệu và công thức nấu ăn!',
+                'start_btn': '<i class="fa-solid fa-play"></i> Bắt đầu ngay',
+                'how_to_title': 'Cách chơi?', 'how_to_sub': 'Hiểu ngay trong 3 giây tại lối vào! Rất dễ.',
+                'step1': 'Nhận bản đồ', 'step1_desc': 'Lấy bản đồ kho báu tại lối vào hoặc trung tâm CSKH!',
+                'step2': 'Tìm màu sắc', 'step2_desc': 'Tìm khu vực có màu giống với màu trên bản đồ của bạn.',
+                'tag_meat': 'Thịt 🥩', 'tag_veg': 'Rau 🥬', 'tag_sea': 'Hải sản 🐟',
+                'step3': 'Lấy nguyên liệu!', 'step3_desc': 'Cho nguyên liệu nhiệm vụ vào giỏ hàng của bạn!',
+                'step4': 'Đóng dấu', 'step4_desc': 'Đóng dấu sau khi hoàn thành nhiệm vụ để nhận thưởng!',
+                'game_badge': 'Trò chơi ảo', 'game_title': 'Kho báu Mini 🎮',
+                'game_sub': 'Di chuyển để tìm nguyên liệu nhiệm vụ hôm nay!',
+                'game_tooltip': 'Di chuyển để lấy kho báu! 👇', 'quest_title': '📜 Nhiệm vụ Bulgogi',
+                'q_meat_loc': 'Quầy Thịt', 'q_meat_item': '🥩 Thịt bò',
+                'q_veg_loc': 'Quầy Rau', 'q_veg_item': '🥬 Hành tây',
+                'q_sea_loc': 'Hải sản', 'q_sea_item': '🐟 Mực',
+                'game_success_title': 'Nhiệm vụ Hoàn Thành!', 'coupon_badge': 'Phần thưởng',
+                'coupon_desc': 'Giảm giá 10%', 'coupon_sub': 'Chụp lại màn hình!',
+                'btn_retry': '<i class="fa-solid fa-rotate-right"></i> Thử lại',
+                'reward_badge': 'Phần thưởng Nhiệm vụ', 'reward_title': 'Phần thưởng Kho Báu!',
+                'reward1_title': 'Móc khóa cá voi', 'reward1_desc': 'Phụ kiện dễ thương!',
+                'reward2_title': 'Sticker giới hạn', 'reward2_desc': 'Trang trí bản đồ của bạn',
+                'reward3_title': 'Mã giảm giá đặc biệt', 'reward3_desc': 'Phần thưởng thêm cho ba mẹ!',
+                'teaser_title': 'Thực đơn tuần tới là gì?',
+                'teaser_soon': 'Sắp ra mắt', 'teaser_hint': 'Nhấn để xem gợi ý!', 'teaser_result': 'Lẩu Nóng!',
+                'noti_title': 'Nhận Thông Báo Tuần Tới!', 'noti_desc': 'Người đầu tiên biết khi bản đồ mới mở.',
+                'placeholder_phone': 'Số điện thoại', 'btn_submit': 'Đăng ký',
+                'outro_title': 'Cuộc săn tiếp tục!', 'outro_desc': 'Mua sắm trở nên thú vị mỗi tuần.',
+                'btn_insta': '<i class="fa-brands fa-instagram text-xl"></i> Xác nhận trên Instagram',
+                'btn_copy': '<i class="fa-regular fa-copy"></i> Sao chép Hashtag',
+                'footer_p1': 'Chương trình diễn ra tại 100 cửa hàng Emart.',
+                'footer_p2': 'Sự kiện có thể kết thúc sớm nếu hết quà.',
+                'footer_terms': 'Điều khoản', 'footer_privacy': 'Bảo mật',
+                'footer_cs_title': '<i class="fa-solid fa-headset mr-2"></i>Trung tâm CSKH',
+                'footer_cs1': 'Tổng đài Emart : 02-380-5678', 'footer_cs2': 'Emart Mall : 1588-1234',
+                'footer_cs3': 'Email : cs@goraeit.com', 'footer_cs4': 'Giờ mở cửa : 09:00 ~ 17:00 (Trừ T7, CN)',
+                
+                'msg_lang': 'Ngôn ngữ đã đổi thành ',
+                'msg_get_meat': 'Đã lấy thịt bò! 🛒', 'msg_get_veggie': 'Đã lấy hành tây! 🛒', 'msg_get_seafood': 'Đã lấy mực! 🛒',
+                'msg_hint': 'Bạn đã tìm thấy gợi ý tuần sau!',
+                'msg_copy_ok': 'Đã sao chép hashtag!', 'msg_copy_fail': 'Sao chép thất bại.',
+                'msg_noti_err': 'Vui lòng nhập số điện thoại! 📱', 'msg_noti_ok': 'Đăng ký thành công! 🔔'
+            },
+            'th': {
+                'store_btn': 'ค้นหาสาขา',
+                'find_store_title': 'ค้นหาอีมาร์ทใกล้คุณ',
+                'current_loc': 'ตำแหน่ง: ปูซาน 📍',
+                'nearest': 'ใกล้ที่สุด', 'open_now': 'เปิดอยู่', 'time1': '10:00 AM ~ 11:00 PM',
+                'view_map': 'ดูแผนที่ <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>',
+                'lv_title': 'Lv.12 นักสำรวจคุณแม่',
+                'quest_ing': 'เควสปัจจุบัน', 'quest_item': 'สมบัติ (0/4)',
+                'quest_accept': '✨ รับเควสแล้ว! ✨',
+                'hero_title': 'ล่าสมบัติ Emart<br><span class="text-white text-5xl md:text-6xl text-stroke block mt-2">เริ่มเลย! 🗺️</span>',
+                'hero_sub': 'รับแผนที่ หาสี และสะสมแสตมป์!<br>หาวัตถุดิบกับลูกๆ และรับสูตรอาหารเย็นนี้!',
+                'start_btn': '<i class="fa-solid fa-play"></i> เริ่มเลย',
+                'how_to_title': 'วิธีการเล่น?', 'how_to_sub': 'เข้าใจง่ายๆ ใน 3 วินาทีที่หน้าประตู!',
+                'step1': 'รับแผนที่', 'step1_desc': 'หยิบแผนที่ล่าสมบัติที่ทางเข้าหรือจุดบริการ!',
+                'step2': 'ค้นหาสี', 'step2_desc': 'หาส่วนที่มีสีตรงกับสีบนแผนที่ของคุณ',
+                'tag_meat': 'เนื้อ 🥩', 'tag_veg': 'ผัก 🥬', 'tag_sea': 'อาหารทะเล 🐟',
+                'step3': 'หยิบวัตถุดิบ!', 'step3_desc': 'หยิบวัตถุดิบเควสและสินค้า Emart PB ใส่รถเข็น!',
+                'step4': 'สะสมแสตมป์', 'step4_desc': 'ประทับตราแผนที่ของคุณหลังเสร็จสิ้นเพื่อรับรางวัล!',
+                'game_badge': 'มินิเกมจำลอง', 'game_title': 'ล่าสมบัติมินิ 🎮',
+                'game_sub': 'เลื่อนเพื่อหาวัตถุดิบสำหรับวันนี้!',
+                'game_tooltip': 'ขยับเพื่อรับสมบัติ! 👇', 'quest_title': '📜 เควสพุลโกกิ',
+                'q_meat_loc': 'โซนเนื้อ', 'q_meat_item': '🥩 เนื้อวัว',
+                'q_veg_loc': 'โซนผัก', 'q_veg_item': '🥬 หัวหอม',
+                'q_sea_loc': 'โซนทะเล', 'q_sea_item': '🐟 ปลาหมึก',
+                'game_success_title': 'เควสสำเร็จ!', 'coupon_badge': 'รางวัล',
+                'coupon_desc': 'ลด 10%', 'coupon_sub': 'แคปหน้าจอไว้เลย!',
+                'btn_retry': '<i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง',
+                'reward_badge': 'สิทธิพิเศษ', 'reward_title': 'รางวัลล่าสมบัติ!',
+                'reward1_title': 'พวงกุญแจวาฬ', 'reward1_desc': 'ของตกแต่งสุดน่ารัก!',
+                'reward2_title': 'สติกเกอร์ลิมิเต็ด', 'reward2_desc': 'ตกแต่งแผนที่ของคุณเอง',
+                'reward3_title': 'คูปองส่วนลด', 'reward3_desc': 'รางวัลโบนัสสำหรับคุณพ่อคุณแม่!',
+                'teaser_title': 'เมนูสมบัติสัปดาห์หน้าคืออะไร?',
+                'teaser_soon': 'เร็วๆ นี้', 'teaser_hint': 'คลิกเพื่อดูคำใบ้!', 'teaser_result': 'หม้อไฟร้อนๆ!',
+                'noti_title': 'รับการแจ้งเตือนสัปดาห์หน้า!', 'noti_desc': 'รู้ก่อนใครเมื่อเปิดแผนที่ล่าสมบัติใหม่',
+                'placeholder_phone': 'หมายเลขโทรศัพท์', 'btn_submit': 'สมัครสมาชิก',
+                'outro_title': 'การล่าสมบัติดำเนินต่อไป!', 'outro_desc': 'การช้อปปิ้งสนุกขึ้นทุกสัปดาห์ด้วยภารกิจใหม่ๆ',
+                'btn_insta': '<i class="fa-brands fa-instagram text-xl"></i> ยืนยันบน Instagram',
+                'btn_copy': '<i class="fa-regular fa-copy"></i> คัดลอกแฮชแท็ก',
+                'footer_p1': 'โปรโมชั่นนี้จัดขึ้นที่ร้าน Emart 100 สาขาทั่วประเทศ',
+                'footer_p2': 'กิจกรรมอาจสิ้นสุดก่อนกำหนดหากของรางวัลหมด',
+                'footer_terms': 'เงื่อนไข', 'footer_privacy': 'นโยบายความเป็นส่วนตัว',
+                'footer_cs_title': '<i class="fa-solid fa-headset mr-2"></i>ศูนย์บริการลูกค้า',
+                'footer_cs1': 'ศูนย์บริการลูกค้า Emart : 02-380-5678', 'footer_cs2': 'Emart Mall : 1588-1234',
+                'footer_cs3': 'อีเมล : cs@goraeit.com', 'footer_cs4': 'เวลาทำการ : 09:00 ~ 17:00 (หยุดเสาร์-อาทิตย์)',
+                
+                'msg_lang': 'เปลี่ยนภาษาเป็น ',
+                'msg_get_meat': 'ได้รับเนื้อวัว! 🛒', 'msg_get_veggie': 'ได้รับหัวหอม! 🛒', 'msg_get_seafood': 'ได้รับปลาหมึก! 🛒',
+                'msg_hint': 'คุณพบคำใบ้สัปดาห์หน้า!',
+                'msg_copy_ok': 'คัดลอกแฮชแท็กแล้ว!', 'msg_copy_fail': 'คัดลอกล้มเหลว',
+                'msg_noti_err': 'โปรดป้อนหมายเลขโทรศัพท์! 📱', 'msg_noti_ok': 'สมัครสมาชิกสำเร็จ! 🔔'
+            }
+        };
+
+        // --- 다국어 메뉴 토글 및 변경 로직 ---
+        function toggleLangMenu() {
+            document.getElementById('lang-menu').classList.toggle('hidden');
+        }
+
+        function changeLang(langCode, langName) {
+            currentLang = langCode; // 현재 언어 업데이트
+            document.getElementById('lang-menu').classList.add('hidden');
+
+            const langData = translations[langCode];
+            if(!langData) return;
+
+            // 1. innerHTML 업데이트
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(langData[key]) el.innerHTML = langData[key];
+            });
+
+            // 2. Placeholder 업데이트
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if(langData[key]) el.placeholder = langData[key];
+            });
+
+            // 3. 언어 변경 성공 토스트
+            let toastMsg = langCode === 'ko' ? translations['ko']['msg_lang'] : langData['msg_lang'] + langName;
+            showToast(toastMsg);
+        }
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('lang-menu');
+            const langBtn = event.target.closest('button[onclick="toggleLangMenu()"]');
+            if (!langBtn && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // --- 매장 찾기 모달 로직 ---
+        function openStoreLocator() {
+            const modal = document.getElementById('store-locator-modal');
+            const content = document.getElementById('store-locator-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                window.innerWidth < 768 ? content.classList.remove('translate-y-full') : content.classList.remove('translate-y-10');
+            }, 10);
+        }
+
+        function closeStoreLocator() {
+            const modal = document.getElementById('store-locator-modal');
+            const content = document.getElementById('store-locator-content');
+            modal.classList.add('opacity-0');
+            window.innerWidth < 768 ? content.classList.add('translate-y-full') : content.classList.add('translate-y-10');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        document.getElementById('store-locator-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeStoreLocator();
+        });
+
+        // --- RPG 미니게임 로직 ---
+        let gameItems = { meat: false, veggie: false, seafood: false };
+        const MAP_SIZE = 5;
+        let playerPos = { x: 2, y: 4 };
+
+        const initialMap = [
+            [2, 1, 0, 1, 4],
+            [0, 1, 0, 1, 0],
+            [3, 0, 0, 0, 0],
+            [1, 1, 0, 1, 1],
+            [0, 0, 0, 0, 0]
+        ];
+        let currentMap = JSON.parse(JSON.stringify(initialMap));
+
+        function initBoard() {
+            const board = document.getElementById('game-board');
+            board.querySelectorAll('.map-tile').forEach(t => t.remove());
+
+            for (let y = 0; y < MAP_SIZE; y++) {
+                for (let x = 0; x < MAP_SIZE; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'map-tile flex items-center justify-center text-2xl transition-all duration-300 border border-gray-200/50';
+                    tile.id = `tile-${x}-${y}`;
+                    
+                    const val = currentMap[y][x];
+                    if (val === 1) tile.classList.add('bg-gray-300', 'shadow-inner');
+                    else if (val === 2) { tile.classList.add('bg-meat/10'); tile.innerHTML = '<span class="animate-pulse drop-shadow-sm">🥩</span>'; }
+                    else if (val === 3) { tile.classList.add('bg-veggie/10'); tile.innerHTML = '<span class="animate-pulse drop-shadow-sm">🥬</span>'; }
+                    else if (val === 4) { tile.classList.add('bg-seafood/10'); tile.innerHTML = '<span class="animate-pulse drop-shadow-sm">🐟</span>'; }
+                    else tile.classList.add('bg-white');
+                    
+                    board.insertBefore(tile, document.getElementById('player'));
+                }
+            }
+            updatePlayerVisual();
+        }
+
+        function updatePlayerVisual() {
+            document.getElementById('player').style.transform = `translate(${playerPos.x * 100}%, ${playerPos.y * 100}%)`;
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+
+            if (newX < 0 || newX >= MAP_SIZE || newY < 0 || newY >= MAP_SIZE) return;
+            if (currentMap[newY][newX] === 1) {
+                const player = document.getElementById('player');
+                player.style.transform = `translate(${(playerPos.x + dx*0.2) * 100}%, ${(playerPos.y + dy*0.2) * 100}%)`;
+                setTimeout(updatePlayerVisual, 100);
+                return;
+            }
+
+            playerPos.x = newX;
+            playerPos.y = newY;
+            updatePlayerVisual();
+            checkItem(newX, newY);
+        }
+
+        function checkItem(x, y) {
+            const val = currentMap[y][x];
+            let type = null;
+            if (val === 2) type = 'meat';
+            if (val === 3) type = 'veggie';
+            if (val === 4) type = 'seafood';
+
+            if (type && !gameItems[type]) collectItem(type, x, y);
+        }
+
+        function collectItem(type, x, y) {
+            gameItems[type] = true;
+            currentMap[y][x] = 0;
+            const tile = document.getElementById(`tile-${x}-${y}`);
+            tile.innerHTML = '';
+            tile.className = 'map-tile flex items-center justify-center text-2xl transition-all duration-300 border border-gray-200/50 bg-white';
+            
+            const checkIcon = document.getElementById(`check-${type}`);
+            const listItem = document.getElementById(`list-${type}`);
+            checkIcon.className = 'fa-solid fa-square-check text-green-500 text-sm animate-bounce';
+            listItem.classList.remove('opacity-60');
+            listItem.classList.add('opacity-100');
+            listItem.querySelectorAll('span').forEach(el => el.classList.add('line-through', 'decoration-green-500', 'decoration-2', 'opacity-70'));
+            
+            // 다국어 적용 메시지 호출
+            showToast(translations[currentLang][`msg_get_${type}`]);
+            checkGameComplete();
+        }
+
+        function checkGameComplete() {
+            if (gameItems.meat && gameItems.veggie && gameItems.seafood) {
+                setTimeout(() => {
+                    const successOverlay = document.getElementById('game-success');
+                    const stampIcon = document.getElementById('stamp-icon');
+                    const couponBox = document.getElementById('coupon-box');
+                    
+                    successOverlay.classList.remove('opacity-0', 'pointer-events-none');
+                    successOverlay.classList.add('opacity-100', 'pointer-events-auto');
+                    
+                    setTimeout(() => {
+                        stampIcon.classList.remove('scale-0');
+                        stampIcon.classList.add('scale-150', '-rotate-12');
+                        setTimeout(() => {
+                            stampIcon.classList.remove('scale-150', '-rotate-12');
+                            stampIcon.classList.add('scale-100', '-rotate-6');
+                            setTimeout(() => { if(couponBox) { couponBox.classList.remove('scale-0'); couponBox.classList.add('scale-100'); } }, 300);
+                        }, 200);
+                    }, 400);
+                }, 400);
+            }
+        }
+
+        function resetGame() {
+            gameItems = { meat: false, veggie: false, seafood: false };
+            playerPos = { x: 2, y: 4 }; 
+            currentMap = JSON.parse(JSON.stringify(initialMap));
+            
+            const successOverlay = document.getElementById('game-success');
+            const stampIcon = document.getElementById('stamp-icon');
+            const couponBox = document.getElementById('coupon-box');
+            
+            successOverlay.classList.add('opacity-0', 'pointer-events-none');
+            successOverlay.classList.remove('opacity-100', 'pointer-events-auto');
+            stampIcon.classList.add('scale-0');
+            stampIcon.classList.remove('scale-100', '-rotate-6');
+            if(couponBox) { couponBox.classList.add('scale-0'); couponBox.classList.remove('scale-100'); }
+            
+            ['meat', 'veggie', 'seafood'].forEach(type => {
+                document.getElementById(`check-${type}`).className = 'fa-regular fa-square text-gray-400 text-xs';
+                const listItem = document.getElementById(`list-${type}`);
+                listItem.className = 'flex flex-col gap-0.5 transition-all duration-300 opacity-60';
+                listItem.querySelectorAll('span').forEach(el => el.classList.remove('line-through', 'decoration-green-500', 'decoration-2', 'opacity-70'));
+            });
+
+            initBoard();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') movePlayer(0, -1);
+            if (e.key === 'ArrowDown') movePlayer(0, 1);
+            if (e.key === 'ArrowLeft') movePlayer(-1, 0);
+            if (e.key === 'ArrowRight') movePlayer(1, 0);
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+        });
+
+        window.onload = initBoard;
+
+        // 티저, 복사, 알림 로직
+        let isRevealed = false;
+        function revealTeaser() {
+            if (isRevealed) return;
+            const img = document.getElementById('teaser-img');
+            const result = document.getElementById('teaser-result');
+            
+            img.style.opacity = '0';
+            img.style.transform = 'scale(0.5)';
+            setTimeout(() => {
+                img.classList.add('hidden');
+                result.classList.remove('hidden');
+                void result.offsetWidth;
+                result.style.opacity = '1';
+                result.style.transform = 'scale(1)';
+                showToast(translations[currentLang]['msg_hint']);
+            }, 500);
+            isRevealed = true;
+        }
+
+        function copyHashtags() {
+            const tags = "#고래잇보물찾기 #이마트미션 #장보기놀이 #주말아이와함께";
+            const textArea = document.createElement("textarea");
+            textArea.value = tags;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast(translations[currentLang]['msg_copy_ok']);
+            } catch (err) {
+                showToast(translations[currentLang]['msg_copy_fail']);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function subscribeNotification() {
+            const input = document.getElementById('phone-input');
+            if (input.value.trim() === '') {
+                showToast(translations[currentLang]['msg_noti_err']);
+                input.focus();
+                return;
+            }
+            showToast(translations[currentLang]['msg_noti_ok']);
+            input.value = '';
+        }
+
+        function handleInstaClick() {
+            const msg = currentLang === 'ko' ? '이마트 보물찾기 인스타그램으로 이동합니다.' : 'Moving to Emart Instagram.';
+            showToast(msg);
+        }
+    </script>
+</body>
+</html>
